@@ -88,10 +88,9 @@ export async function runBrandVerifiers(args: {
   const comviqVerifierEnabled = isEnabled(process.env.COMVIQ_VERIFIER_ENABLED, true);
 
   // Tele2 ranges can be Tele2 or Comviq, so this verifier is useful there.
-  if (comviqVerifierEnabled && (operatorKey === "tele2" || operatorKey === "unknown")) {
+  if (comviqVerifierEnabled && (args.operatorKey === "tele2" || args.operatorKey === "unknown")) {
     signals.push(await verifyComviqBrand(args.e164));
   }
 
   return { enabled: true, signals };
 }
-

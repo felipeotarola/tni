@@ -34,7 +34,16 @@ Response shape:
   "number": "+46701234567",
   "operator": "Tele2 Sverige AB",
   "brand_guess": "Comviq",
+  "brand_confidence": 0.6,
   "network": "Tele2",
+  "reasons": [
+    "Multiple possible brands: Comviq, Tele2.",
+    "[binding] Default risk for major operator without stronger signals."
+  ],
+  "verification": {
+    "enabled": false,
+    "signals": []
+  },
   "binding": {
     "status": "possible_binding",
     "risk": "medium",
@@ -81,6 +90,29 @@ The service converts `+46701234567` into:
 - `nummer = 1234567`
 
 If PTS fails, service falls back to local `number_ranges` mapping.
+
+## Brand Verification Signals (feature-flagged)
+
+Optional verifier layer for brand disambiguation.
+
+Environment flags:
+
+- `BRAND_VERIFICATION_ENABLED=true` to enable verifier execution.
+- `COMVIQ_VERIFIER_ENABLED=true` to enable Comviq-specific verifier.
+- `COMVIQ_VERIFY_TIMEOUT_MS=1800` request timeout in milliseconds.
+
+Current verifier:
+
+- `comviq_refill_api`:
+  - Calls `https://api-online.comviq.se/purchase-api/trpc/refill.getRefillOptions?input=...`
+  - If response indicates `RFIL0012 / INVALID_BRAND`, signal becomes `not_brand` for `Comviq`.
+  - If response is `200`, signal becomes `possibly_brand` for `Comviq`.
+
+All verifier signals are returned under `verification.signals` and folded into:
+
+- `brand_guess`
+- `brand_confidence`
+- `reasons[]`
 
 ## Persistence and Migrations
 
