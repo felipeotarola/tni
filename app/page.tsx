@@ -1,6 +1,12 @@
-"use client";
+﻿"use client";
 
 import { useMemo, useState } from "react";
+
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 
 type SingleLookupResponse = {
   number: string;
@@ -67,14 +73,14 @@ export default function Home() {
       const data = (await response.json()) as SingleLookupResponse | { error: string };
       if (!response.ok) {
         setSingleResult(null);
-        setSingleError("error" in data ? data.error : "Lookup failed");
+        setSingleError("error" in data ? data.error : "Uppslag misslyckades");
         return;
       }
 
       setSingleResult(data as SingleLookupResponse);
     } catch {
       setSingleResult(null);
-      setSingleError("Network error");
+      setSingleError("Nätverksfel");
     } finally {
       setSingleLoading(false);
     }
@@ -94,114 +100,130 @@ export default function Home() {
       const data = (await response.json()) as BatchLookupResponse | { error: string };
       if (!response.ok) {
         setBatchResult(null);
-        setBatchError("error" in data ? data.error : "Batch lookup failed");
+        setBatchError("error" in data ? data.error : "Batch-uppslag misslyckades");
         return;
       }
 
       setBatchResult(data as BatchLookupResponse);
     } catch {
       setBatchResult(null);
-      setBatchError("Network error");
+      setBatchError("Nätverksfel");
     } finally {
       setBatchLoading(false);
     }
   }
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-cyan-50 via-white to-emerald-50 px-4 py-10 text-zinc-900">
-      <div className="mx-auto flex w-full max-w-6xl flex-col gap-6">
-        <header className="rounded-2xl border border-cyan-200 bg-white p-6 shadow-sm">
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-cyan-700">Telecom Number Intelligence</p>
-          <h1 className="mt-2 text-3xl font-bold tracking-tight">API Test Console</h1>
-          <p className="mt-2 text-sm text-zinc-600">
-            Testa single och batch lookup mot era endpoints i samma miljö.
-          </p>
-        </header>
+    <main className="min-h-screen bg-[radial-gradient(circle_at_top,_color-mix(in_oklab,var(--primary)_12%,white),white_60%)] px-4 py-8 sm:py-12">
+      <div className="mx-auto w-full max-w-6xl space-y-6">
+        <Card className="border-primary/25 shadow-sm">
+          <CardHeader>
+            <div className="flex flex-wrap items-center gap-2">
+              <Badge>Telecom Number Intelligence</Badge>
+              <Badge variant="outline">MVP Console</Badge>
+            </div>
+            <CardTitle className="text-3xl tracking-tight">API-testkonsol</CardTitle>
+            <CardDescription>
+              Testa enstaka och batch-flöden mot <code>/api/lookup</code> och <code>/api/batch-lookup</code>.
+            </CardDescription>
+          </CardHeader>
+        </Card>
 
         <section className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-          <article className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
-            <h2 className="text-lg font-semibold">Single Lookup</h2>
-            <p className="mt-1 text-sm text-zinc-600">Skickar `POST /api/lookup` med ett nummer.</p>
-
-            <label className="mt-4 block text-sm font-medium">Phone number</label>
-            <input
-              className="mt-2 w-full rounded-lg border border-zinc-300 px-3 py-2 outline-none ring-cyan-200 transition focus:ring-2"
-              value={singleNumber}
-              onChange={(event) => setSingleNumber(event.target.value)}
-              placeholder="0701234567"
-            />
-
-            <button
-              className="mt-4 rounded-lg bg-cyan-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-cyan-700 disabled:cursor-not-allowed disabled:opacity-60"
-              onClick={runSingleLookup}
-              disabled={singleLoading}
-            >
-              {singleLoading ? "Running..." : "Run Single Lookup"}
-            </button>
-
-            {singleError ? (
-              <p className="mt-4 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{singleError}</p>
-            ) : null}
-
-            {singleResult ? (
-              <div className="mt-4 space-y-2 text-sm">
-                <div className="grid grid-cols-2 gap-2 rounded-md bg-zinc-50 p-3">
-                  <span className="text-zinc-500">Operator</span>
-                  <span className="font-medium">{singleResult.operator}</span>
-                  <span className="text-zinc-500">Brand guess</span>
-                  <span className="font-medium">{singleResult.brand_guess}</span>
-                  <span className="text-zinc-500">Network</span>
-                  <span className="font-medium">{singleResult.network}</span>
-                  <span className="text-zinc-500">Binding risk</span>
-                  <span className="font-medium">{singleResult.binding.risk}</span>
-                </div>
-                <pre className="overflow-x-auto rounded-md border border-zinc-200 bg-zinc-950 p-3 text-xs text-zinc-100">
-                  {JSON.stringify(singleResult, null, 2)}
-                </pre>
+          <Card className="shadow-sm">
+            <CardHeader>
+              <CardTitle>Enstaka uppslag</CardTitle>
+              <CardDescription>Skicka ett nummer till lookup-endpointen.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="space-y-1">
+                <label className="text-sm font-medium">Telefonnummer</label>
+                <Input
+                  value={singleNumber}
+                  onChange={(event) => setSingleNumber(event.target.value)}
+                  placeholder="0701234567"
+                />
               </div>
-            ) : null}
-          </article>
 
-          <article className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
-            <h2 className="text-lg font-semibold">Batch Lookup</h2>
-            <p className="mt-1 text-sm text-zinc-600">Skickar `POST /api/batch-lookup` med flera nummer.</p>
+              <Button onClick={runSingleLookup} disabled={singleLoading} className="w-full sm:w-auto">
+                {singleLoading ? "Kör..." : "Kör enstaka uppslag"}
+              </Button>
 
-            <label className="mt-4 block text-sm font-medium">Numbers (newline or comma separated)</label>
-            <textarea
-              className="mt-2 min-h-32 w-full rounded-lg border border-zinc-300 px-3 py-2 outline-none ring-emerald-200 transition focus:ring-2"
-              value={batchInput}
-              onChange={(event) => setBatchInput(event.target.value)}
-            />
-            <p className="mt-2 text-xs text-zinc-500">{batchNumbers.length} parsed numbers</p>
+              {singleError ? (
+                <p className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+                  {singleError}
+                </p>
+              ) : null}
 
-            <button
-              className="mt-4 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
-              onClick={runBatchLookup}
-              disabled={batchLoading}
-            >
-              {batchLoading ? "Running..." : "Run Batch Lookup"}
-            </button>
-
-            {batchError ? (
-              <p className="mt-4 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{batchError}</p>
-            ) : null}
-
-            {batchResult ? (
-              <div className="mt-4 space-y-2 text-sm">
-                <div className="grid grid-cols-3 gap-2 rounded-md bg-zinc-50 p-3">
-                  <span className="text-zinc-500">Requested</span>
-                  <span className="text-zinc-500">Successful</span>
-                  <span className="text-zinc-500">Failed</span>
-                  <span className="font-semibold">{batchResult.summary.requested}</span>
-                  <span className="font-semibold text-emerald-700">{batchResult.summary.successful}</span>
-                  <span className="font-semibold text-red-700">{batchResult.summary.failed}</span>
+              {singleResult ? (
+                <div className="space-y-3">
+                  <div className="grid grid-cols-2 gap-2 rounded-lg border bg-muted/40 p-3 text-sm">
+                    <span className="text-muted-foreground">Operatör</span>
+                    <span className="font-medium">{singleResult.operator}</span>
+                    <span className="text-muted-foreground">Brandgissning</span>
+                    <span className="font-medium">{singleResult.brand_guess}</span>
+                    <span className="text-muted-foreground">Nät</span>
+                    <span className="font-medium">{singleResult.network}</span>
+                    <span className="text-muted-foreground">Bindningsrisk</span>
+                    <span className="font-medium">{singleResult.binding.risk}</span>
+                  </div>
+                  <pre className="max-h-72 overflow-auto rounded-lg border bg-black p-3 text-xs text-white">
+                    {JSON.stringify(singleResult, null, 2)}
+                  </pre>
                 </div>
-                <pre className="overflow-x-auto rounded-md border border-zinc-200 bg-zinc-950 p-3 text-xs text-zinc-100">
-                  {JSON.stringify(batchResult, null, 2)}
-                </pre>
+              ) : null}
+            </CardContent>
+          </Card>
+
+          <Card className="shadow-sm">
+            <CardHeader>
+              <CardTitle>Batch-uppslag</CardTitle>
+              <CardDescription>Skicka rad- eller kommaseparerade nummer i batch.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="space-y-1">
+                <label className="text-sm font-medium">Nummer</label>
+                <Textarea
+                  className="min-h-40"
+                  value={batchInput}
+                  onChange={(event) => setBatchInput(event.target.value)}
+                />
+                <p className="text-xs text-muted-foreground">{batchNumbers.length} tolkade nummer</p>
               </div>
-            ) : null}
-          </article>
+
+              <Button onClick={runBatchLookup} disabled={batchLoading} className="w-full sm:w-auto">
+                {batchLoading ? "Kör..." : "Kör batch-uppslag"}
+              </Button>
+
+              {batchError ? (
+                <p className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+                  {batchError}
+                </p>
+              ) : null}
+
+              {batchResult ? (
+                <div className="space-y-3">
+                  <div className="grid grid-cols-3 gap-2 rounded-lg border bg-muted/40 p-3 text-center text-sm">
+                    <div>
+                      <p className="text-muted-foreground">Skickade</p>
+                      <p className="font-semibold">{batchResult.summary.requested}</p>
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground">Lyckade</p>
+                      <p className="font-semibold text-emerald-700">{batchResult.summary.successful}</p>
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground">Misslyckade</p>
+                      <p className="font-semibold text-destructive">{batchResult.summary.failed}</p>
+                    </div>
+                  </div>
+                  <pre className="max-h-72 overflow-auto rounded-lg border bg-black p-3 text-xs text-white">
+                    {JSON.stringify(batchResult, null, 2)}
+                  </pre>
+                </div>
+              ) : null}
+            </CardContent>
+          </Card>
         </section>
       </div>
     </main>

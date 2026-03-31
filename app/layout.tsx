@@ -1,20 +1,20 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const appSans = Inter({
+  variable: "--font-app-sans",
   subsets: ["latin"],
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const appMono = JetBrains_Mono({
+  variable: "--font-app-mono",
   subsets: ["latin"],
 });
 
 export const metadata: Metadata = {
   title: "TNI MVP Console",
-  description: "Telecom Number Intelligence testing console",
+  description: "Testkonsol för Telecom Number Intelligence",
 };
 
 export default function RootLayout({
@@ -24,8 +24,8 @@ export default function RootLayout({
 }>) {
   return (
     <html
-      lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      lang="sv"
+      className={`${appSans.variable} ${appMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">{children}</body>
     </html>
