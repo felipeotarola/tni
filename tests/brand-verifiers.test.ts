@@ -7,6 +7,8 @@ describe("brand verifiers", () => {
     vi.restoreAllMocks();
     delete process.env.BRAND_VERIFICATION_ENABLED;
     delete process.env.COMVIQ_VERIFIER_ENABLED;
+    delete process.env.TRE_HALLON_VERIFIER_ENABLED;
+    delete process.env.TRE_VERIFY_RECAPTCHA_TOKEN;
   });
 
   it("returns no signals when verification is disabled", async () => {
@@ -62,5 +64,35 @@ describe("brand verifiers", () => {
     expect(result.signals[0].signal).toBe("possibly_brand");
     expect(result.signals[0].confidence).toBeGreaterThan(0.8);
   });
-});
 
+  it("returns Tre signal for hi3g when tre verifier endpoint succeeds", async () => {
+    process.env.BRAND_VERIFICATION_ENABLED = "true";
+    process.env.TRE_HALLON_VERIFIER_ENABLED = "true";
+    process.env.TRE_VERIFY_RECAPTCHA_TOKEN = "dummy-token";
+
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({ ok: true }), { status: 200 })));
+
+    const result = await runBrandVerifiers({
+      e164: "+46762560000",
+      operatorKey: "hi3g",
+    });
+
+    expect(result.enabled).toBe(true);
+    expect(result.signals[0].provider).toBe("tre_checkout_api");
+    expect(result.signals[0].brand).toBe("Tre");
+    expect(result.signals[0].signal).toBe("possibly_brand");
+  });
+
+  it("skips hi3g tre verifier when tre recaptcha token is missing", async () => {
+    process.env.BRAND_VERIFICATION_ENABLED = "true";
+    process.env.TRE_HALLON_VERIFIER_ENABLED = "true";
+
+    const result = await runBrandVerifiers({
+      e164: "+46762560000",
+      operatorKey: "hi3g",
+    });
+
+    expect(result.enabled).toBe(false);
+    expect(result.signals).toHaveLength(0);
+  });
+});

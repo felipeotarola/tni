@@ -23,10 +23,34 @@ type BrandDecision = {
   brand: string;
   confidence: number;
   reasons: string[];
+  verificationEnabled: boolean;
   verificationSignals: BrandVerificationSignal[];
 };
 
 const lookupCache = new Map<string, CacheEntry>();
+
+function classifyNumber(e164: string): {
+  numberType: "mobile";
+  rangeCategory: "mobile_070" | "mobile_072" | "mobile_073" | "mobile_076" | "mobile_079" | "mobile_other";
+} {
+  const local = `0${e164.slice(3)}`; // +46701234567 -> 0701234567
+  const prefix3 = local.slice(0, 3);
+
+  switch (prefix3) {
+    case "070":
+      return { numberType: "mobile", rangeCategory: "mobile_070" };
+    case "072":
+      return { numberType: "mobile", rangeCategory: "mobile_072" };
+    case "073":
+      return { numberType: "mobile", rangeCategory: "mobile_073" };
+    case "076":
+      return { numberType: "mobile", rangeCategory: "mobile_076" };
+    case "079":
+      return { numberType: "mobile", rangeCategory: "mobile_079" };
+    default:
+      return { numberType: "mobile", rangeCategory: "mobile_other" };
+  }
+}
 
 export function normalizeSwedishMobile(raw: string): string {
   const compact = raw.replace(/[^\d+]/g, "");
@@ -263,6 +287,7 @@ async function decideBrand(args: {
   number: string;
   operator: string;
   isPorted: boolean;
+  treRecaptchaToken?: string;
 }): Promise<BrandDecision> {
   const mapping = getOperatorMapping(args.operator);
   const operatorKey = canonicalOperatorKey(args.operator);
@@ -285,21 +310,25 @@ async function decideBrand(args: {
   const verification = await runBrandVerifiers({
     e164: args.number,
     operatorKey,
+    treRecaptchaToken: args.treRecaptchaToken,
   });
 
   for (const signal of verification.signals) {
     reasons.push(`[${signal.provider}] ${signal.reason}`);
 
-    if (signal.brand.toLowerCase() === "comviq") {
-      const hasTele2 = mapping.brands.some((entry) => entry.toLowerCase() === "tele2");
-      if (signal.signal === "not_brand" && hasTele2) {
-        brand = "Tele2";
-        confidence = Math.max(confidence, 0.78);
-      }
-      if (signal.signal === "possibly_brand") {
-        brand = "Comviq";
-        confidence = Math.max(confidence, signal.confidence);
-      }
+    const signalBrand = signal.brand.toLowerCase();
+    const mappedSignalBrand = mapping.brands.find((entry) => entry.toLowerCase() === signalBrand);
+    const alternatives = mapping.brands.filter((entry) => entry.toLowerCase() !== signalBrand);
+
+    if (signal.signal === "possibly_brand" && mappedSignalBrand) {
+      brand = mappedSignalBrand;
+      confidence = Math.max(confidence, signal.confidence);
+      continue;
+    }
+
+    if (signal.signal === "not_brand" && brand.toLowerCase() === signalBrand && alternatives.length > 0) {
+      brand = alternatives[0];
+      confidence = Math.max(confidence, 0.78);
     }
   }
 
@@ -307,6 +336,7 @@ async function decideBrand(args: {
     brand,
     confidence,
     reasons,
+    verificationEnabled: verification.enabled,
     verificationSignals: verification.signals,
   };
 }
@@ -335,10 +365,14 @@ function persistLookup(result: LookupResult): void {
   );
 }
 
-export async function lookupPhoneNumber(raw: string): Promise<LookupResult> {
+export async function lookupPhoneNumber(
+  raw: string,
+  options?: { forceRefresh?: boolean; treRecaptchaToken?: string },
+): Promise<LookupResult> {
   const number = normalizeSwedishMobile(raw);
-  const cached = readCached(number);
-  if (cached) {
+  const classification = classifyNumber(number);
+  const cached = options?.forceRefresh ? null : readCached(number);
+  if (cached && !options?.forceRefresh) {
     return cached;
   }
 
@@ -348,6 +382,7 @@ export async function lookupPhoneNumber(raw: string): Promise<LookupResult> {
     number,
     operator: operatorResult.operator,
     isPorted,
+    treRecaptchaToken: options?.treRecaptchaToken,
   });
   const network = detectNetwork(operatorResult.operator, brand.brand);
   const binding = runBindingRisk({
@@ -358,13 +393,15 @@ export async function lookupPhoneNumber(raw: string): Promise<LookupResult> {
 
   const result: LookupResult = {
     number,
+    number_type: classification.numberType,
+    range_category: classification.rangeCategory,
     operator: operatorResult.operator,
     brand_guess: brand.brand,
     brand_confidence: brand.confidence,
     network,
     reasons: [...brand.reasons, `[binding] ${binding.reason}`],
     verification: {
-      enabled: brand.verificationSignals.length > 0 || String(process.env.BRAND_VERIFICATION_ENABLED) === "true",
+      enabled: brand.verificationEnabled,
       signals: brand.verificationSignals,
     },
     binding: {

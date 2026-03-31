@@ -32,6 +32,8 @@ Response shape:
 ```json
 {
   "number": "+46701234567",
+  "number_type": "mobile",
+  "range_category": "mobile_070",
   "operator": "Tele2 Sverige AB",
   "brand_guess": "Comviq",
   "brand_confidence": 0.6,
@@ -97,7 +99,7 @@ Optional verifier layer for brand disambiguation.
 
 Environment flags:
 
-- `BRAND_VERIFICATION_ENABLED=true` to enable verifier execution.
+- `BRAND_VERIFICATION_ENABLED=true|false` controls verifier execution. Default is `true`.
 - `COMVIQ_VERIFIER_ENABLED=true` to enable Comviq-specific verifier.
 - `COMVIQ_VERIFY_TIMEOUT_MS=1800` request timeout in milliseconds.
 
@@ -113,6 +115,10 @@ All verifier signals are returned under `verification.signals` and folded into:
 - `brand_guess`
 - `brand_confidence`
 - `reasons[]`
+
+You can also bypass cache per request:
+
+- `force_refresh: true` in request body for `/api/lookup` and `/api/batch-lookup`.
 
 ## Persistence and Migrations
 

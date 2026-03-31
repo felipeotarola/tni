@@ -4,6 +4,10 @@ import { lookupPhoneNumber } from "@/lib/telecom/engine";
 type LookupBody = {
   phone_number?: unknown;
   format?: unknown;
+  force_refresh?: unknown;
+  verification?: {
+    tre_recaptcha_token?: unknown;
+  };
 };
 
 export async function POST(request: Request) {
@@ -20,7 +24,13 @@ export async function POST(request: Request) {
   }
 
   try {
-    const result = await lookupPhoneNumber(body.phone_number);
+    const result = await lookupPhoneNumber(body.phone_number, {
+      forceRefresh: body.force_refresh === true,
+      treRecaptchaToken:
+        typeof body.verification?.tre_recaptcha_token === "string"
+          ? body.verification.tre_recaptcha_token
+          : undefined,
+    });
     const outputFormat = resolveOutputFormat({
       queryFormat: url.searchParams.get("format"),
       bodyFormat: body.format,

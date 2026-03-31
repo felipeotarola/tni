@@ -4,6 +4,10 @@ import { lookupPhoneNumber } from "@/lib/telecom/engine";
 type BatchBody = {
   numbers?: unknown;
   format?: unknown;
+  force_refresh?: unknown;
+  verification?: {
+    tre_recaptcha_token?: unknown;
+  };
 };
 
 export async function POST(request: Request) {
@@ -28,7 +32,17 @@ export async function POST(request: Request) {
     return Response.json({ error: "Maximum 250 numbers per batch." }, { status: 400 });
   }
 
-  const settled = await Promise.allSettled(numbers.map((number) => lookupPhoneNumber(number)));
+  const settled = await Promise.allSettled(
+    numbers.map((number) =>
+      lookupPhoneNumber(number, {
+        forceRefresh: body.force_refresh === true,
+        treRecaptchaToken:
+          typeof body.verification?.tre_recaptcha_token === "string"
+            ? body.verification.tre_recaptcha_token
+            : undefined,
+      }),
+    ),
+  );
 
   const results = settled
     .filter((item): item is PromiseFulfilledResult<Awaited<ReturnType<typeof lookupPhoneNumber>>> => item.status === "fulfilled")

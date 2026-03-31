@@ -18,6 +18,8 @@ export type BrandVerificationSignal = {
 
 export type LookupResult = {
   number: string;
+  number_type: "mobile";
+  range_category: "mobile_070" | "mobile_072" | "mobile_073" | "mobile_076" | "mobile_079" | "mobile_other";
   operator: string;
   brand_guess: string;
   brand_confidence: number;

@@ -38,8 +38,86 @@ import {
 } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
 
+declare global {
+  interface Window {
+    grecaptcha?: {
+      enterprise?: {
+        ready: (cb: () => void) => void;
+        execute: (siteKey: string, options: { action: string }) => Promise<string>;
+      };
+    };
+  }
+}
+
+const TRE_RECAPTCHA_SITE_KEY =
+  process.env.NEXT_PUBLIC_TRE_RECAPTCHA_SITE_KEY ?? "6LfFv9cUAAAAADEpDmfQCftwweAM9il-Gq9mH-H5";
+const TRE_RECAPTCHA_ACTION =
+  process.env.NEXT_PUBLIC_TRE_RECAPTCHA_ACTION ?? "numberTransferField";
+
+function loadTreRecaptchaScript(): Promise<void> {
+  if (typeof window === "undefined") {
+    return Promise.resolve();
+  }
+  if (window.grecaptcha?.enterprise) {
+    return Promise.resolve();
+  }
+
+  const existing = document.querySelector<HTMLScriptElement>("script[data-tre-recaptcha='1']");
+  if (existing) {
+    return new Promise((resolve) => {
+      if (window.grecaptcha?.enterprise) {
+        resolve();
+        return;
+      }
+      existing.addEventListener("load", () => resolve(), { once: true });
+      existing.addEventListener("error", () => resolve(), { once: true });
+    });
+  }
+
+  return new Promise((resolve) => {
+    const script = document.createElement("script");
+    script.src = `https://www.google.com/recaptcha/enterprise.js?render=${encodeURIComponent(
+      TRE_RECAPTCHA_SITE_KEY,
+    )}`;
+    script.async = true;
+    script.defer = true;
+    script.dataset.treRecaptcha = "1";
+    script.onload = () => resolve();
+    script.onerror = () => resolve();
+    document.head.appendChild(script);
+  });
+}
+
+async function getTreRecaptchaTokenFromBrowser(): Promise<string | null> {
+  try {
+    await loadTreRecaptchaScript();
+
+    const enterprise = window.grecaptcha?.enterprise;
+    if (!enterprise) {
+      return null;
+    }
+
+    return await new Promise<string | null>((resolve) => {
+      enterprise.ready(async () => {
+        try {
+          const token = await enterprise.execute(TRE_RECAPTCHA_SITE_KEY, {
+            action: TRE_RECAPTCHA_ACTION,
+          });
+          resolve(token && token.length > 0 ? token : null);
+        } catch {
+          resolve(null);
+        }
+      });
+    });
+  } catch {
+    return null;
+  }
+}
+
 type SingleLookupResponse = {
   number: string;
+  number_type: "mobile";
+  range_category: string;
   operator: string;
   brand_guess: string;
   brand_confidence: number;
@@ -136,10 +214,17 @@ export default function Home() {
     setSingleError(null);
 
     try {
+      const treRecaptchaToken = await getTreRecaptchaTokenFromBrowser();
       const response = await fetch("/api/lookup", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ phone_number: singleNumber }),
+        body: JSON.stringify({
+          phone_number: singleNumber,
+          force_refresh: true,
+          verification: treRecaptchaToken
+            ? { tre_recaptcha_token: treRecaptchaToken }
+            : undefined,
+        }),
       });
 
       const data = (await response.json()) as
@@ -426,6 +511,14 @@ export default function Home() {
                           <TableRow>
                             <TableCell>Nummer</TableCell>
                             <TableCell className="font-mono">{singleResult.number}</TableCell>
+                          </TableRow>
+                          <TableRow>
+                            <TableCell>Number type</TableCell>
+                            <TableCell>{singleResult.number_type}</TableCell>
+                          </TableRow>
+                          <TableRow>
+                            <TableCell>Range category</TableCell>
+                            <TableCell>{singleResult.range_category}</TableCell>
                           </TableRow>
                           <TableRow>
                             <TableCell>Operatör</TableCell>
