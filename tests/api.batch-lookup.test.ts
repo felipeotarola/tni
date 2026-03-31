@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-function makeRequest(body: unknown): Request {
-  return new Request("http://localhost/api/batch-lookup", {
+function makeRequest(body: unknown, query = ""): Request {
+  return new Request(`http://localhost/api/batch-lookup${query}`, {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify(body),
@@ -53,5 +53,25 @@ describe("POST /api/batch-lookup", () => {
     expect(payload.errors[0].phone_number).toBe("0312345678");
     expect(payload.summary).toEqual({ requested: 2, successful: 1, failed: 1 });
   });
-});
 
+  it("returns markdown table when format=table", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () =>
+        new Response(JSON.stringify({ number: "70-1234567", name: "Telia Sverige AB" }), {
+          status: 200,
+          headers: { "content-type": "application/json" },
+        }),
+      ),
+    );
+
+    const { POST } = await import("@/app/api/batch-lookup/route");
+    const response = await POST(makeRequest({ numbers: ["0701234567", "0312345678"] }, "?format=table"));
+    const payload = await response.text();
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get("content-type")).toContain("text/markdown");
+    expect(payload).toContain("## Summary");
+    expect(payload).toContain("| Number | Operator | Brand Guess |");
+  });
+});

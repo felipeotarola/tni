@@ -1,10 +1,13 @@
+import { formatLookupAsMarkdownTable, resolveOutputFormat } from "@/lib/telecom/response-format";
 import { lookupPhoneNumber } from "@/lib/telecom/engine";
 
 type LookupBody = {
   phone_number?: unknown;
+  format?: unknown;
 };
 
 export async function POST(request: Request) {
+  const url = new URL(request.url);
   let body: LookupBody;
   try {
     body = (await request.json()) as LookupBody;
@@ -18,6 +21,18 @@ export async function POST(request: Request) {
 
   try {
     const result = await lookupPhoneNumber(body.phone_number);
+    const outputFormat = resolveOutputFormat({
+      queryFormat: url.searchParams.get("format"),
+      bodyFormat: body.format,
+    });
+
+    if (outputFormat === "table") {
+      return new Response(formatLookupAsMarkdownTable(result), {
+        status: 200,
+        headers: { "content-type": "text/markdown; charset=utf-8" },
+      });
+    }
+
     return Response.json(result);
   } catch (error) {
     const message = error instanceof Error ? error.message : "Lookup failed.";
@@ -25,4 +40,3 @@ export async function POST(request: Request) {
     return Response.json({ error: message }, { status });
   }
 }
-

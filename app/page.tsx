@@ -28,13 +28,33 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
 
 type SingleLookupResponse = {
   number: string;
   operator: string;
   brand_guess: string;
+  brand_confidence: number;
   network: string;
+  reasons: string[];
+  verification: {
+    enabled: boolean;
+    signals: Array<{
+      provider: string;
+      signal: string;
+      brand: string;
+      confidence: number;
+      reason: string;
+    }>;
+  };
   binding: {
     status: string;
     risk: string;
@@ -73,6 +93,18 @@ function riskColor(risk: string) {
     default:
       return "text-muted-foreground bg-muted";
   }
+}
+
+function getPossibleBrandsText(result: SingleLookupResponse): string {
+  const candidate = result.reasons.find((reason) =>
+    reason.toLowerCase().startsWith("multiple possible brands:"),
+  );
+  if (!candidate) {
+    return result.brand_guess;
+  }
+
+  const value = candidate.split(":")[1]?.trim();
+  return value && value.length > 0 ? value : result.brand_guess;
 }
 
 export default function Home() {
@@ -263,7 +295,7 @@ export default function Home() {
                 <CardContent className="space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="phone">Telefonnummer</Label>
-                    <div className="flex gap-2">
+                    <div className="flex flex-wrap gap-2">
                       <Input
                         id="phone"
                         value={singleNumber}
@@ -380,6 +412,98 @@ export default function Home() {
                   </CardContent>
                   <CardFooter className="flex-col items-start gap-1">
                     <p className="text-xs font-medium text-muted-foreground">
+                      Tabellvy
+                    </p>
+                    <div className="w-full overflow-hidden rounded-md border">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Fält</TableHead>
+                            <TableHead>Värde</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          <TableRow>
+                            <TableCell>Nummer</TableCell>
+                            <TableCell className="font-mono">{singleResult.number}</TableCell>
+                          </TableRow>
+                          <TableRow>
+                            <TableCell>Operatör</TableCell>
+                            <TableCell>{singleResult.operator}</TableCell>
+                          </TableRow>
+                          <TableRow>
+                            <TableCell>Brand</TableCell>
+                            <TableCell>{singleResult.brand_guess}</TableCell>
+                          </TableRow>
+                          <TableRow>
+                            <TableCell>Möjliga brands</TableCell>
+                            <TableCell>{getPossibleBrandsText(singleResult)}</TableCell>
+                          </TableRow>
+                          <TableRow>
+                            <TableCell>Brand confidence</TableCell>
+                            <TableCell>{singleResult.brand_confidence}</TableCell>
+                          </TableRow>
+                          <TableRow>
+                            <TableCell>Nät</TableCell>
+                            <TableCell>{singleResult.network}</TableCell>
+                          </TableRow>
+                          <TableRow>
+                            <TableCell>Verification enabled</TableCell>
+                            <TableCell>{String(singleResult.verification.enabled)}</TableCell>
+                          </TableRow>
+                          <TableRow>
+                            <TableCell>Verification signals</TableCell>
+                            <TableCell className="whitespace-pre-wrap">
+                              {singleResult.verification.signals.length > 0
+                                ? singleResult.verification.signals
+                                    .map(
+                                      (signal) =>
+                                        `${signal.provider} | ${signal.signal} | ${signal.brand} | ${signal.confidence} | ${signal.reason}`,
+                                    )
+                                    .join("\n")
+                                : "—"}
+                            </TableCell>
+                          </TableRow>
+                          <TableRow>
+                            <TableCell>Binding status</TableCell>
+                            <TableCell>{singleResult.binding.status}</TableCell>
+                          </TableRow>
+                          <TableRow>
+                            <TableCell>Bindningsrisk</TableCell>
+                            <TableCell>{singleResult.binding.risk}</TableCell>
+                          </TableRow>
+                          <TableRow>
+                            <TableCell>Binding confidence</TableCell>
+                            <TableCell>{singleResult.binding.confidence}</TableCell>
+                          </TableRow>
+                          <TableRow>
+                            <TableCell>Porterad</TableCell>
+                            <TableCell>{singleResult.metadata.is_ported ? "Ja" : "Nej"}</TableCell>
+                          </TableRow>
+                          <TableRow>
+                            <TableCell>Metadata sources</TableCell>
+                            <TableCell>{singleResult.metadata.sources.join(", ") || "—"}</TableCell>
+                          </TableRow>
+                          <TableRow>
+                            <TableCell>Metadata last_checked</TableCell>
+                            <TableCell className="font-mono">{singleResult.metadata.last_checked}</TableCell>
+                          </TableRow>
+                          <TableRow>
+                            <TableCell>Confidence operator</TableCell>
+                            <TableCell>{singleResult.confidence.operator}</TableCell>
+                          </TableRow>
+                          <TableRow>
+                            <TableCell>Confidence brand</TableCell>
+                            <TableCell>{singleResult.confidence.brand}</TableCell>
+                          </TableRow>
+                          <TableRow>
+                            <TableCell>Confidence binding</TableCell>
+                            <TableCell>{singleResult.confidence.binding}</TableCell>
+                          </TableRow>
+                        </TableBody>
+                      </Table>
+                    </div>
+                    <p className="text-xs font-medium text-muted-foreground">
                       Rå JSON-respons
                     </p>
                     <pre className="max-h-56 w-full overflow-auto rounded-md bg-zinc-950 p-3 font-mono text-xs text-zinc-300">
@@ -479,26 +603,33 @@ export default function Home() {
                         <p className="text-xs font-medium text-muted-foreground">
                           Individuella resultat
                         </p>
-                        <div className="space-y-1.5">
-                          {batchResult.results.map((r) => (
-                            <div
-                              key={r.number}
-                              className="flex items-center justify-between rounded-md border bg-muted/20 px-3 py-2 text-sm"
-                            >
-                              <span className="font-mono">{r.number}</span>
-                              <div className="flex items-center gap-2">
-                                <span className="text-muted-foreground">
-                                  {r.operator}
-                                </span>
-                                <Badge
-                                  className={riskColor(r.binding.risk)}
-                                  variant="secondary"
-                                >
-                                  {r.binding.risk}
-                                </Badge>
-                              </div>
-                            </div>
-                          ))}
+                        <div className="overflow-hidden rounded-md border">
+                          <Table>
+                            <TableHeader>
+                              <TableRow>
+                                <TableHead>Nummer</TableHead>
+                                <TableHead>Operatör</TableHead>
+                                <TableHead>Brand</TableHead>
+                                <TableHead>Nät</TableHead>
+                                <TableHead>Risk</TableHead>
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                              {batchResult.results.map((r) => (
+                                <TableRow key={r.number}>
+                                  <TableCell className="font-mono">{r.number}</TableCell>
+                                  <TableCell>{r.operator}</TableCell>
+                                  <TableCell>{r.brand_guess}</TableCell>
+                                  <TableCell>{r.network}</TableCell>
+                                  <TableCell>
+                                    <Badge className={riskColor(r.binding.risk)} variant="secondary">
+                                      {r.binding.risk}
+                                    </Badge>
+                                  </TableCell>
+                                </TableRow>
+                              ))}
+                            </TableBody>
+                          </Table>
                         </div>
                       </div>
                     ) : null}

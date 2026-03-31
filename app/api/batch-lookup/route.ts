@@ -1,10 +1,13 @@
+import { formatBatchAsMarkdownTable, resolveOutputFormat } from "@/lib/telecom/response-format";
 import { lookupPhoneNumber } from "@/lib/telecom/engine";
 
 type BatchBody = {
   numbers?: unknown;
+  format?: unknown;
 };
 
 export async function POST(request: Request) {
+  const url = new URL(request.url);
   let body: BatchBody;
   try {
     body = (await request.json()) as BatchBody;
@@ -41,7 +44,7 @@ export async function POST(request: Request) {
       error: entry.item.reason instanceof Error ? entry.item.reason.message : "Lookup failed.",
     }));
 
-  return Response.json({
+  const responsePayload = {
     results,
     errors,
     summary: {
@@ -49,6 +52,18 @@ export async function POST(request: Request) {
       successful: results.length,
       failed: errors.length,
     },
-  });
-}
+  };
 
+  const outputFormat = resolveOutputFormat({
+    queryFormat: url.searchParams.get("format"),
+    bodyFormat: body.format,
+  });
+  if (outputFormat === "table") {
+    return new Response(formatBatchAsMarkdownTable(responsePayload), {
+      status: 200,
+      headers: { "content-type": "text/markdown; charset=utf-8" },
+    });
+  }
+
+  return Response.json(responsePayload);
+}

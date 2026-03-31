@@ -53,16 +53,7 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
         </SidebarGroup>
       </SidebarContent>
 
-      <SidebarFooter className="p-4">
-        <Card className="border-dashed">
-          <CardHeader>
-            <CardTitle className="text-sm">Signalmodell</CardTitle>
-            <CardDescription>
-              Operatör = stark signal, bindning = heuristik.
-            </CardDescription>
-          </CardHeader>
-        </Card>
-      </SidebarFooter>
+
 
       <SidebarRail />
     </Sidebar>
