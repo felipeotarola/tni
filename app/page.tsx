@@ -114,117 +114,172 @@ export default function Home() {
   }
 
   return (
-    <main className="min-h-screen bg-[radial-gradient(circle_at_top,_color-mix(in_oklab,var(--primary)_12%,white),white_60%)] px-4 py-8 sm:py-12">
-      <div className="mx-auto w-full max-w-6xl space-y-6">
-        <Card className="border-primary/25 shadow-sm">
-          <CardHeader>
-            <div className="flex flex-wrap items-center gap-2">
-              <Badge>Telecom Number Intelligence</Badge>
-              <Badge variant="outline">MVP Console</Badge>
+    <main className="min-h-screen bg-muted/30">
+      <div className="mx-auto flex min-h-screen w-full max-w-[1440px]">
+        <aside className="hidden w-72 shrink-0 border-r bg-background p-5 lg:block">
+          <div className="space-y-6">
+            <div>
+              <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Telecom Number Intelligence</p>
+              <h1 className="mt-2 text-xl font-semibold">Ops Dashboard</h1>
             </div>
-            <CardTitle className="text-3xl tracking-tight">API-testkonsol</CardTitle>
-            <CardDescription>
-              Testa enstaka och batch-flöden mot <code>/api/lookup</code> och <code>/api/batch-lookup</code>.
-            </CardDescription>
-          </CardHeader>
-        </Card>
 
-        <section className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-          <Card className="shadow-sm">
-            <CardHeader>
-              <CardTitle>Enstaka uppslag</CardTitle>
-              <CardDescription>Skicka ett nummer till lookup-endpointen.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="space-y-1">
-                <label className="text-sm font-medium">Telefonnummer</label>
-                <Input
-                  value={singleNumber}
-                  onChange={(event) => setSingleNumber(event.target.value)}
-                  placeholder="0701234567"
-                />
+            <nav className="space-y-1 text-sm">
+              <div className="rounded-md bg-primary/10 px-3 py-2 font-medium text-primary">Översikt</div>
+              <div className="rounded-md px-3 py-2 text-muted-foreground">Enstaka uppslag</div>
+              <div className="rounded-md px-3 py-2 text-muted-foreground">Batch-uppslag</div>
+              <div className="rounded-md px-3 py-2 text-muted-foreground">Historik</div>
+              <div className="rounded-md px-3 py-2 text-muted-foreground">Inställningar</div>
+            </nav>
+
+            <Card size="sm" className="border-dashed">
+              <CardHeader>
+                <CardTitle className="text-sm">Signalmodell</CardTitle>
+                <CardDescription>Operatör = stark signal, bindning = heuristik.</CardDescription>
+              </CardHeader>
+            </Card>
+          </div>
+        </aside>
+
+        <div className="flex min-w-0 flex-1 flex-col">
+          <header className="border-b bg-background px-4 py-3 sm:px-6">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <h2 className="text-lg font-semibold">Lead Intelligence</h2>
+                <p className="text-sm text-muted-foreground">Testa lookup API och se säljsignaler direkt.</p>
               </div>
-
-              <Button onClick={runSingleLookup} disabled={singleLoading} className="w-full sm:w-auto">
-                {singleLoading ? "Kör..." : "Kör enstaka uppslag"}
-              </Button>
-
-              {singleError ? (
-                <p className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-                  {singleError}
-                </p>
-              ) : null}
-
-              {singleResult ? (
-                <div className="space-y-3">
-                  <div className="grid grid-cols-2 gap-2 rounded-lg border bg-muted/40 p-3 text-sm">
-                    <span className="text-muted-foreground">Operatör</span>
-                    <span className="font-medium">{singleResult.operator}</span>
-                    <span className="text-muted-foreground">Brandgissning</span>
-                    <span className="font-medium">{singleResult.brand_guess}</span>
-                    <span className="text-muted-foreground">Nät</span>
-                    <span className="font-medium">{singleResult.network}</span>
-                    <span className="text-muted-foreground">Bindningsrisk</span>
-                    <span className="font-medium">{singleResult.binding.risk}</span>
-                  </div>
-                  <pre className="max-h-72 overflow-auto rounded-lg border bg-black p-3 text-xs text-white">
-                    {JSON.stringify(singleResult, null, 2)}
-                  </pre>
-                </div>
-              ) : null}
-            </CardContent>
-          </Card>
-
-          <Card className="shadow-sm">
-            <CardHeader>
-              <CardTitle>Batch-uppslag</CardTitle>
-              <CardDescription>Skicka rad- eller kommaseparerade nummer i batch.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="space-y-1">
-                <label className="text-sm font-medium">Nummer</label>
-                <Textarea
-                  className="min-h-40"
-                  value={batchInput}
-                  onChange={(event) => setBatchInput(event.target.value)}
-                />
-                <p className="text-xs text-muted-foreground">{batchNumbers.length} tolkade nummer</p>
+              <div className="flex items-center gap-2">
+                <Badge variant="outline">/api/lookup</Badge>
+                <Badge variant="outline">/api/batch-lookup</Badge>
               </div>
+            </div>
+          </header>
 
-              <Button onClick={runBatchLookup} disabled={batchLoading} className="w-full sm:w-auto">
-                {batchLoading ? "Kör..." : "Kör batch-uppslag"}
-              </Button>
+          <div className="space-y-6 p-4 sm:p-6">
+            <section className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+              <Card size="sm">
+                <CardHeader>
+                  <CardDescription>Senaste operatör</CardDescription>
+                  <CardTitle>{singleResult?.operator ?? "Ingen data"}</CardTitle>
+                </CardHeader>
+              </Card>
+              <Card size="sm">
+                <CardHeader>
+                  <CardDescription>Brandgissning</CardDescription>
+                  <CardTitle>{singleResult?.brand_guess ?? "-"}</CardTitle>
+                </CardHeader>
+              </Card>
+              <Card size="sm">
+                <CardHeader>
+                  <CardDescription>Batch lyckade</CardDescription>
+                  <CardTitle>{batchResult?.summary.successful ?? 0}</CardTitle>
+                </CardHeader>
+              </Card>
+              <Card size="sm">
+                <CardHeader>
+                  <CardDescription>Batch fel</CardDescription>
+                  <CardTitle>{batchResult?.summary.failed ?? 0}</CardTitle>
+                </CardHeader>
+              </Card>
+            </section>
 
-              {batchError ? (
-                <p className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-                  {batchError}
-                </p>
-              ) : null}
-
-              {batchResult ? (
-                <div className="space-y-3">
-                  <div className="grid grid-cols-3 gap-2 rounded-lg border bg-muted/40 p-3 text-center text-sm">
-                    <div>
-                      <p className="text-muted-foreground">Skickade</p>
-                      <p className="font-semibold">{batchResult.summary.requested}</p>
-                    </div>
-                    <div>
-                      <p className="text-muted-foreground">Lyckade</p>
-                      <p className="font-semibold text-emerald-700">{batchResult.summary.successful}</p>
-                    </div>
-                    <div>
-                      <p className="text-muted-foreground">Misslyckade</p>
-                      <p className="font-semibold text-destructive">{batchResult.summary.failed}</p>
-                    </div>
+            <section className="grid grid-cols-1 gap-6 xl:grid-cols-2">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Enstaka uppslag</CardTitle>
+                  <CardDescription>Skicka ett nummer till lookup-endpointen.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div className="space-y-1">
+                    <label className="text-sm font-medium">Telefonnummer</label>
+                    <Input
+                      value={singleNumber}
+                      onChange={(event) => setSingleNumber(event.target.value)}
+                      placeholder="0701234567"
+                    />
                   </div>
-                  <pre className="max-h-72 overflow-auto rounded-lg border bg-black p-3 text-xs text-white">
-                    {JSON.stringify(batchResult, null, 2)}
-                  </pre>
-                </div>
-              ) : null}
-            </CardContent>
-          </Card>
-        </section>
+
+                  <Button onClick={runSingleLookup} disabled={singleLoading} className="w-full sm:w-auto">
+                    {singleLoading ? "Kör..." : "Kör enstaka uppslag"}
+                  </Button>
+
+                  {singleError ? (
+                    <p className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+                      {singleError}
+                    </p>
+                  ) : null}
+
+                  {singleResult ? (
+                    <div className="space-y-3">
+                      <div className="grid grid-cols-2 gap-2 rounded-lg border bg-muted/40 p-3 text-sm">
+                        <span className="text-muted-foreground">Operatör</span>
+                        <span className="font-medium">{singleResult.operator}</span>
+                        <span className="text-muted-foreground">Brandgissning</span>
+                        <span className="font-medium">{singleResult.brand_guess}</span>
+                        <span className="text-muted-foreground">Nät</span>
+                        <span className="font-medium">{singleResult.network}</span>
+                        <span className="text-muted-foreground">Bindningsrisk</span>
+                        <span className="font-medium">{singleResult.binding.risk}</span>
+                      </div>
+                      <pre className="max-h-72 overflow-auto rounded-lg border bg-black p-3 text-xs text-white">
+                        {JSON.stringify(singleResult, null, 2)}
+                      </pre>
+                    </div>
+                  ) : null}
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>Batch-uppslag</CardTitle>
+                  <CardDescription>Skicka rad- eller kommaseparerade nummer i batch.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div className="space-y-1">
+                    <label className="text-sm font-medium">Nummer</label>
+                    <Textarea
+                      className="min-h-40"
+                      value={batchInput}
+                      onChange={(event) => setBatchInput(event.target.value)}
+                    />
+                    <p className="text-xs text-muted-foreground">{batchNumbers.length} tolkade nummer</p>
+                  </div>
+
+                  <Button onClick={runBatchLookup} disabled={batchLoading} className="w-full sm:w-auto">
+                    {batchLoading ? "Kör..." : "Kör batch-uppslag"}
+                  </Button>
+
+                  {batchError ? (
+                    <p className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+                      {batchError}
+                    </p>
+                  ) : null}
+
+                  {batchResult ? (
+                    <div className="space-y-3">
+                      <div className="grid grid-cols-3 gap-2 rounded-lg border bg-muted/40 p-3 text-center text-sm">
+                        <div>
+                          <p className="text-muted-foreground">Skickade</p>
+                          <p className="font-semibold">{batchResult.summary.requested}</p>
+                        </div>
+                        <div>
+                          <p className="text-muted-foreground">Lyckade</p>
+                          <p className="font-semibold text-emerald-700">{batchResult.summary.successful}</p>
+                        </div>
+                        <div>
+                          <p className="text-muted-foreground">Misslyckade</p>
+                          <p className="font-semibold text-destructive">{batchResult.summary.failed}</p>
+                        </div>
+                      </div>
+                      <pre className="max-h-72 overflow-auto rounded-lg border bg-black p-3 text-xs text-white">
+                        {JSON.stringify(batchResult, null, 2)}
+                      </pre>
+                    </div>
+                  ) : null}
+                </CardContent>
+              </Card>
+            </section>
+          </div>
+        </div>
       </div>
     </main>
   );
