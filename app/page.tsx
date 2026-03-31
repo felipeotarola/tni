@@ -114,47 +114,19 @@ export default function Home() {
   }
 
   return (
-    <main className="min-h-screen bg-muted/30">
-      <div className="mx-auto flex min-h-screen w-full max-w-[1440px]">
-        <aside className="hidden w-72 shrink-0 border-r bg-background p-5 lg:block">
-          <div className="space-y-6">
-            <div>
-              <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Telecom Number Intelligence</p>
-              <h1 className="mt-2 text-xl font-semibold">Ops Dashboard</h1>
-            </div>
+    <div className="flex min-w-0 flex-1 flex-col">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b bg-background px-4 py-3 sm:px-6">
+        <div>
+          <h2 className="text-lg font-semibold">Lead Intelligence</h2>
+          <p className="text-sm text-muted-foreground">Testa lookup API och se säljsignaler direkt.</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <Badge variant="outline">/api/lookup</Badge>
+          <Badge variant="outline">/api/batch-lookup</Badge>
+        </div>
+      </div>
 
-            <nav className="space-y-1 text-sm">
-              <div className="rounded-md bg-primary/10 px-3 py-2 font-medium text-primary">Översikt</div>
-              <div className="rounded-md px-3 py-2 text-muted-foreground">Enstaka uppslag</div>
-              <div className="rounded-md px-3 py-2 text-muted-foreground">Batch-uppslag</div>
-              <div className="rounded-md px-3 py-2 text-muted-foreground">Historik</div>
-              <div className="rounded-md px-3 py-2 text-muted-foreground">Inställningar</div>
-            </nav>
-
-            <Card size="sm" className="border-dashed">
-              <CardHeader>
-                <CardTitle className="text-sm">Signalmodell</CardTitle>
-                <CardDescription>Operatör = stark signal, bindning = heuristik.</CardDescription>
-              </CardHeader>
-            </Card>
-          </div>
-        </aside>
-
-        <div className="flex min-w-0 flex-1 flex-col">
-          <header className="border-b bg-background px-4 py-3 sm:px-6">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <div>
-                <h2 className="text-lg font-semibold">Lead Intelligence</h2>
-                <p className="text-sm text-muted-foreground">Testa lookup API och se säljsignaler direkt.</p>
-              </div>
-              <div className="flex items-center gap-2">
-                <Badge variant="outline">/api/lookup</Badge>
-                <Badge variant="outline">/api/batch-lookup</Badge>
-              </div>
-            </div>
-          </header>
-
-          <div className="space-y-6 p-4 sm:p-6">
+      <div className="space-y-6 p-4 sm:p-6">
             <section className="grid grid-cols-2 gap-3 lg:grid-cols-4">
               <Card size="sm">
                 <CardHeader>
@@ -280,7 +252,5 @@ export default function Home() {
             </section>
           </div>
         </div>
-      </div>
-    </main>
   );
 }

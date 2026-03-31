@@ -8,11 +8,25 @@ export type OperatorLookupResult = {
   confidence: number;
 };
 
+export type BrandVerificationSignal = {
+  provider: string;
+  signal: "possibly_brand" | "not_brand" | "unknown";
+  brand: string;
+  confidence: number;
+  reason: string;
+};
+
 export type LookupResult = {
   number: string;
   operator: string;
   brand_guess: string;
+  brand_confidence: number;
   network: string;
+  reasons: string[];
+  verification: {
+    enabled: boolean;
+    signals: BrandVerificationSignal[];
+  };
   binding: {
     status: BindingStatus;
     risk: BindingRisk;
@@ -29,4 +43,3 @@ export type LookupResult = {
     binding: number;
   };
 };
-

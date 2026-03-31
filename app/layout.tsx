@@ -2,6 +2,10 @@ import type { Metadata } from "next";
 import { Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 
+import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import { AppSidebar } from "@/components/app-sidebar";
+
 const appSans = Inter({
   variable: "--font-app-sans",
   subsets: ["latin"],
@@ -27,7 +31,19 @@ export default function RootLayout({
       lang="sv"
       className={`${appSans.variable} ${appMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col">
+        <TooltipProvider>
+          <SidebarProvider>
+            <AppSidebar />
+            <SidebarInset>
+              <header className="flex h-12 items-center gap-2 border-b px-4">
+                <SidebarTrigger className="-ml-1" />
+              </header>
+              {children}
+            </SidebarInset>
+          </SidebarProvider>
+        </TooltipProvider>
+      </body>
     </html>
   );
 }
