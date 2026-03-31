@@ -1,36 +1,123 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Telecom Number Intelligence MVP
 
-## Getting Started
+API-first MVP for Swedish mobile number enrichment.
 
-First, run the development server:
+## Run
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Server starts on `http://localhost:3000`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Endpoints
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- `POST /api/lookup`
+- `POST /api/batch-lookup`
+- `GET /api/health`
 
-## Learn More
+### `POST /api/lookup`
 
-To learn more about Next.js, take a look at the following resources:
+Request:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```json
+{
+  "phone_number": "0701234567"
+}
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Response shape:
 
-## Deploy on Vercel
+```json
+{
+  "number": "+46701234567",
+  "operator": "Tele2 Sverige AB",
+  "brand_guess": "Comviq",
+  "network": "Tele2",
+  "binding": {
+    "status": "possible_binding",
+    "risk": "medium",
+    "confidence": 0.6
+  },
+  "metadata": {
+    "is_ported": true,
+    "sources": ["PTS_OPEN_DATA"],
+    "last_checked": "2026-03-31T12:00:00.000Z"
+  },
+  "confidence": {
+    "operator": 1,
+    "brand": 0.6,
+    "binding": 0.6
+  }
+}
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### `POST /api/batch-lookup`
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Request:
+
+```json
+{
+  "numbers": ["0701234567", "0731234567"]
+}
+```
+
+Response includes successful `results`, failed `errors`, and a `summary`.
+
+## PTS Integration
+
+Primary source is PTS open data, with this verified contract:
+
+- Base URL: `https://data.pts.se` (override with `PTS_BASE_URL`)
+- Endpoint: `GET /v1/operator/{ndc}/{nummer}`
+- Example: `GET https://data.pts.se/v1/operator/70/1234567`
+- Response shape: `{"number":"70-1234567","name":"Telia Sverige AB"}`
+- Auth: none required for tested endpoint
+
+The service converts `+46701234567` into:
+
+- `ndc = 70`
+- `nummer = 1234567`
+
+If PTS fails, service falls back to local `number_ranges` mapping.
+
+## Persistence and Migrations
+
+Persistence is SQLite (`better-sqlite3`) with automatic SQL migrations on first DB access.
+
+- Default DB path: `data/tni.sqlite`
+- Override path with `DATABASE_PATH`
+- Migration files:
+  - `migrations/001_init.sql`
+  - `migrations/002_seed_operator_mapping.sql`
+  - `migrations/003_seed_number_ranges.sql`
+
+Tables:
+
+- `lookups`
+- `operator_mapping`
+- `number_ranges`
+- `_migrations` (internal migration tracking)
+
+## Tests
+
+Run:
+
+```bash
+npm run test
+```
+
+Covered:
+
+- invalid/non-mobile input
+- PTS success response handling
+- fallback when PTS fails
+- batch validation errors
+- batch partial success with per-number error reporting
+
+## Notes
+
+- Supports Swedish mobile numbers only (`07xxxxxxxx` and equivalent `+46` forms).
+- Brand and binding are heuristic signals, not contractual truth.
+- Lookup cache is in-memory in addition to persisted `lookups`.
