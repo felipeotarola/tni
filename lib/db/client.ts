@@ -9,6 +9,20 @@ function ensureDatabaseDirectory(filePath: string): void {
   fs.mkdirSync(directory, { recursive: true });
 }
 
+function resolveDefaultDatabasePath(): string {
+  if (process.env.DATABASE_PATH) {
+    return process.env.DATABASE_PATH;
+  }
+
+  // Serverless filesystems (for example Vercel/AWS Lambda) are read-only
+  // except for /tmp, which is ephemeral but writable.
+  if (process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME || process.env.LAMBDA_TASK_ROOT) {
+    return path.join("/tmp", "tni.sqlite");
+  }
+
+  return path.join(process.cwd(), "data", "tni.sqlite");
+}
+
 function runMigrations(db: Database.Database): void {
   db.exec(`
     CREATE TABLE IF NOT EXISTS _migrations (
@@ -47,7 +61,7 @@ export function getDb(): Database.Database {
     return dbInstance;
   }
 
-  const dbPath = process.env.DATABASE_PATH ?? path.join(process.cwd(), "data", "tni.sqlite");
+  const dbPath = resolveDefaultDatabasePath();
   ensureDatabaseDirectory(dbPath);
 
   dbInstance = new Database(dbPath);
@@ -57,4 +71,3 @@ export function getDb(): Database.Database {
 
   return dbInstance;
 }
-

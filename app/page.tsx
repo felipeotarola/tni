@@ -49,13 +49,15 @@ declare global {
   }
 }
 
-const TRE_RECAPTCHA_SITE_KEY =
-  process.env.NEXT_PUBLIC_TRE_RECAPTCHA_SITE_KEY ?? "6LfFv9cUAAAAADEpDmfQCftwweAM9il-Gq9mH-H5";
+const TRE_RECAPTCHA_SITE_KEY = process.env.NEXT_PUBLIC_TRE_RECAPTCHA_SITE_KEY?.trim() ?? "";
 const TRE_RECAPTCHA_ACTION =
   process.env.NEXT_PUBLIC_TRE_RECAPTCHA_ACTION ?? "numberTransferField";
 
 function loadTreRecaptchaScript(): Promise<void> {
   if (typeof window === "undefined") {
+    return Promise.resolve();
+  }
+  if (!TRE_RECAPTCHA_SITE_KEY) {
     return Promise.resolve();
   }
   if (window.grecaptcha?.enterprise) {
@@ -90,6 +92,10 @@ function loadTreRecaptchaScript(): Promise<void> {
 
 async function getTreRecaptchaTokenFromBrowser(): Promise<string | null> {
   try {
+    if (!TRE_RECAPTCHA_SITE_KEY) {
+      return null;
+    }
+
     await loadTreRecaptchaScript();
 
     const enterprise = window.grecaptcha?.enterprise;
